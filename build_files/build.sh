@@ -17,43 +17,37 @@ dnf5 install -y \
      https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
      https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 
-
-# this installs a package from fedora repos
+# Install Packages
 dnf5 install -y \
-     mesa-dri-drivers \
-     mesa-va-drivers \
-     pipewire \
-     wireplumber \
-     ffmpeg \
      kodi \
      kodi-inputstream-adaptive \
-     cockpit-system \
-     cockpit-podman \
+     cage \
+     libva-intel-driver \
+     libva-utils \
+     mesa-dir-drivers \
+     mesa-va-drivers \
+     pipewire \
+     pipewire-pulseaudio \
+     wireplumber \
+     alsa-utils \
+     podman \
+     podman-compose \
+     flatpak \
+     cockpit \
+     cockpit-files \
      cockpit-storaged \
      cockpit-networkmanager \
-     cockpit-files \
      cockpit-ostree \
-     cockpit
-     samba \
-     udev \
-     podman-compose \
-     && dnf clean all
+     ffmpeg
 
-# Use a COPR Example:
-#
-# dnf5 -y copr enable ublue-os/staging
-# dnf5 -y install package
-# Disable COPRs so they don't end up enabled on the final image:
-# dnf5 -y copr disable ublue-os/staging
+# Enable kodi service
+systemctl enable kodi.service bootc-fetch-apply-updates.timer
 
-# Adding firewall rules
-#firewall-offline-cmd --add-service=cockpit 
-#firewall-offline-cmd --add-service=samba
+# Add flatpak repo
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-# Setup SELinux rule
-#semanage fcontext --add --type "samba_share_t" "/var/media(/.*)?"
-#restorecon -R /var/media
+### Enable optional management services
 
-#### Example for enabling a System Unit File
 systemctl enable podman.socket
 systemctl enable cockpit.socket
+
