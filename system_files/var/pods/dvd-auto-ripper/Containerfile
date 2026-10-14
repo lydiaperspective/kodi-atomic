@@ -1,0 +1,63 @@
+FROM debian:trixie-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    DVD_DEVICE=/dev/sr0 \
+    OUTPUT_DIR=/media \
+    WORK_DIR=/work \
+    GPU_ENCODER=h264_vaapi \
+    POLL_SECONDS=5
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      bash ca-certificates cmake build-essential git pkg-config python3 \
+      ffmpeg jq util-linux eject \
+      libdvdread-dev libva2 libva-drm2 libva-x11-2 vainfo i965-va-driver \
+    && rm -rf /var/lib/apt/lists/*
+
+# dvd_info provides dvd_info, dvd_copy and dvd_drive_status.
+RUN git clone --depth 1 https://github.com/beandog/dvd_info.git /tmp/dvd_info \
+    && cd /tmp/dvd_info \
+    && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build build --parallel \
+    && cmake --install build \
+    && install -m 0755 dvd_rip /usr/local/bin/dvd_rip-upstream \
+    && rm -rf /tmp/dvd_info
+
+# Patch dvd_rip so the VA-API path uploads frames to the GPU and uses QP instead of CRF.
+RUN python3 - <<'PY'
+from pathlib import Path
+p = Path('/usr/local/bin/dvd_rip-upstream')
+s = p.read_text()
+s = s.replace('''if [[ -n "$crf" ]] && [[ "$crf" -gt 0 ]]; then
+
+ffmpeg_opts="$ffmpeg_opts -crf $crf"
+
+fi''', '''if [[ "$vcodec" == "h264_vaapi" ]]; then
+
+ffmpeg_opts="$ffmpeg_opts -qp ${VAAPI_QP:-22}"
+
+elif [[ -n "$crf" ]] && [[ "$crf" -gt 0 ]]; then
+
+ffmpeg_opts="$ffmpeg_opts -crf $crf"
+
+fi''')
+s = s.replace('''if [[ "$vcodec" != "copy" ]]; then
+
+ffmpeg_opts="$ffmpeg_opts -vf bwdif"
+
+fi''', '''if [[ "$vcodec" == "h264_vaapi" ]]; then
+
+ffmpeg_opts="$ffmpeg_opts -vaapi_device ${VAAPI_DEVICE:-/dev/dri/renderD128} -vf bwdif,format=nv12,hwupload"
+
+elif [[ "$vcodec" != "copy" ]]; then
+
+ffmpeg_opts="$ffmpeg_opts -vf bwdif"
+
+fi''')
+p.write_text(s)
+PY
+
+COPY ripper.sh /usr/local/bin/ripper.sh
+RUN chmod 0755 /usr/local/bin/ripper.sh
+
+VOLUME ["/media", "/work"]
+ENTRYPOINT ["/usr/local/bin/ripper.sh"]

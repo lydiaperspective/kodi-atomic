@@ -1,0 +1,26 @@
+services:
+  dvd-ripper:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: dvd-ripper
+    restart: unless-stopped
+    # This is intended for rootful Podman. Pass only the optical and render devices needed.
+    devices:
+      - /dev/sr0:/dev/sr0
+      - /dev/dri/renderD128:/dev/dri/renderD128
+    environment:
+      DVD_DEVICE: /dev/sr0
+      OUTPUT_DIR: /media
+      WORK_DIR: /work
+      VIDEO_ENCODER: h264_vaapi
+      VAAPI_DEVICE: /dev/dri/renderD128
+      VAAPI_QP: "22"
+      POLL_SECONDS: "5"
+    volumes:
+      # Change these host paths to your actual media library and app-data locations.
+      - /srv/media/Movies:/media:Z
+      - ./work:/work:Z
+    # If the host uses SELinux and device access is denied, consider adding:
+    # security_opt:
+    #   - label=disable
