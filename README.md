@@ -35,11 +35,19 @@ sudo chown -R $user:$user output/
 
 Now you can flash the iso to a usb or run in virtual machine.
 
-
-
 # Installing the OS:
 
 During the installer make sure to create the user as **kodi**, you can set whatever password you want.
+
+
+
+# Notes:
+
+If the build tool leaves a folder owned by root in the project folder (it likely will) use the following command to remove it.
+
+```
+sudo rm -R folderName
+```
 
 ## Goals:
 
