@@ -46,6 +46,10 @@ systemctl enable kodi.service bootc-fetch-apply-updates.timer
 # Enable flatpak-setup
 systemctl enable flatpak-setup.service
 
+# Add Flathub and Install Grayjay
+flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --system -y --noninteractive flathub app.grayjay.Grayjay
+
 # Enable Services
 systemctl enable podman.socket
 systemctl enable cockpit.socket
