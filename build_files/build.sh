@@ -24,7 +24,7 @@ dnf5 install -y \
      cage \
      libva-intel-driver \
      libva-utils \
-     mesa-dir-drivers \
+     mesa-dri-drivers \
      mesa-va-drivers \
      pipewire \
      pipewire-pulseaudio \
