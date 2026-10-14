@@ -43,11 +43,10 @@ dnf5 install -y \
 # Enable kodi service
 systemctl enable kodi.service bootc-fetch-apply-updates.timer
 
-# Add flatpak repo
-flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+# Enable flatpak-setup
+systemctl enable flatpak-setup.service
 
-### Enable optional management services
-
+# Enable Services
 systemctl enable podman.socket
 systemctl enable cockpit.socket
 

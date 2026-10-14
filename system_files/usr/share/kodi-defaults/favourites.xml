@@ -1,0 +1,3 @@
+<favourites>
+    <favourite name="Grayjay" thumb="DefaultProgram.png">System.Exec(flatpak run app.grayjay.Grayjay)</favourite>
+</favourites>
