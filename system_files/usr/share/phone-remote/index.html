@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Phone Remote</title>
+<style>
+  :root { color-scheme: dark; --bg:#111; --pad:#1f1f1f; --btn:#2e2e2e; --btn-active:#4a4a4a; --fg:#eee; --ok:#4caf50; --bad:#e53935; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; overscroll-behavior:none; }
+  body { display:flex; flex-direction:column; height:100dvh; padding:env(safe-area-inset-top) 8px env(safe-area-inset-bottom); gap:8px; user-select:none; -webkit-user-select:none; }
+  #status { position:fixed; top:6px; right:10px; width:10px; height:10px; border-radius:50%; background:var(--bad); z-index:2; }
+  #status.on { background:var(--ok); }
+  #pad { flex:1; min-height:120px; background:var(--pad); border-radius:14px; touch-action:none; margin-top:8px; display:flex; align-items:center; justify-content:center; color:#555; font-size:14px; }
+  .row { display:flex; gap:8px; }
+  button { flex:1; padding:16px 4px; font-size:17px; border:0; border-radius:10px; background:var(--btn); color:var(--fg); touch-action:manipulation; }
+  button:active { background:var(--btn-active); }
+  .dpad { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; flex:1; }
+  .dpad .blank { visibility:hidden; }
+  .side { display:flex; flex-direction:column; gap:8px; flex:1; }
+  #kb { position:fixed; bottom:0; left:0; width:1px; height:1px; opacity:0; pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="status" title="connection"></div>
+<div id="pad">touchpad</div>
+
+<div class="row">
+  <button id="l">Left</button>
+  <button id="m">Mid</button>
+  <button id="r">Right</button>
+</div>
+
+<div class="row">
+  <div class="dpad">
+    <span class="blank"></span><button data-key="up">▲</button><span class="blank"></span>
+    <button data-key="left">◀</button><button data-key="enter">OK</button><button data-key="right">▶</button>
+    <span class="blank"></span><button data-key="down">▼</button><span class="blank"></span>
+  </div>
+  <div class="side">
+    <button data-key="esc">Back</button>
+    <button data-key="home">Home</button>
+    <button data-key="backspace">⌫</button>
+  </div>
+</div>
+
+<div class="row">
+  <button data-key="prev">⏮</button>
+  <button data-key="playpause">⏯</button>
+  <button data-key="stop">⏹</button>
+  <button data-key="next">⏭</button>
+</div>
+<div class="row">
+  <button data-key="voldown">Vol −</button>
+  <button data-key="mute">Mute</button>
+  <button data-key="volup">Vol +</button>
+  <button id="k">⌨</button>
+</div>
+
+<textarea id="kb" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="keyboard input"></textarea>
+
+<script>
+const token = new URLSearchParams(location.search).get("t") || "";
+const statusDot = document.getElementById("status");
+let ws;
+
+function connect() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws?t=${encodeURIComponent(token)}`);
+  ws.onopen  = () => statusDot.classList.add("on");
+  ws.onclose = () => { statusDot.classList.remove("on"); setTimeout(connect, 1000); };
+}
+connect();
+const send = o => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); };
+
+// ---- touchpad: 1 finger = move, quick tap = left click, 2 fingers = scroll
+const SENS = 1.8;
+const pad = document.getElementById("pad");
+const pts = new Map();
+let t0 = 0, moved = 0, scrollAcc = 0, maxPts = 0;
+
+pad.addEventListener("pointerdown", ev => {
+  pad.setPointerCapture(ev.pointerId);
+  pts.set(ev.pointerId, ev);
+  if (pts.size === 1) { t0 = performance.now(); moved = 0; scrollAcc = 0; maxPts = 1; }
+  maxPts = Math.max(maxPts, pts.size);
+});
+pad.addEventListener("pointermove", ev => {
+  const p = pts.get(ev.pointerId);
+  if (!p) return;
+  const dx = ev.clientX - p.clientX, dy = ev.clientY - p.clientY;
+  pts.set(ev.pointerId, ev);
+  moved += Math.abs(dx) + Math.abs(dy);
+  if (pts.size === 1) {
+    send({ k: "move", dx: dx * SENS, dy: dy * SENS });
+  } else if (pts.size === 2) {
+    scrollAcc += dy;
+    while (Math.abs(scrollAcc) >= 14) {
+      send({ k: "scroll", dy: scrollAcc > 0 ? -1 : 1 });
+      scrollAcc -= Math.sign(scrollAcc) * 14;
+    }
+  }
+});
+function endPointer(ev, allowTap) {
+  if (!pts.has(ev.pointerId)) return;
+  if (allowTap && pts.size === 1 && maxPts === 1 && moved < 8 && performance.now() - t0 < 250) {
+    send({ k: "click", b: "left" });
+  } else if (allowTap && pts.size === 2 && maxPts === 2 && moved < 12 && performance.now() - t0 < 250) {
+    send({ k: "click", b: "right" }); // two-finger tap = right click
+  }
+  pts.delete(ev.pointerId);
+}
+pad.addEventListener("pointerup", ev => endPointer(ev, true));
+pad.addEventListener("pointercancel", ev => endPointer(ev, false));
+
+// ---- buttons
+document.getElementById("l").onclick = () => send({ k: "click", b: "left" });
+document.getElementById("m").onclick = () => send({ k: "click", b: "middle" });
+document.getElementById("r").onclick = () => send({ k: "click", b: "right" });
+document.querySelectorAll("button[data-key]").forEach(b => {
+  b.addEventListener("click", () => send({ k: "key", name: b.dataset.key }));
+});
+
+// ---- software keyboard: hidden textarea that always holds a 2-char sentinel,
+// so a backspace is detectable even when nothing has been typed.
+const kb = document.getElementById("kb");
+const SENTINEL = "  ";
+document.getElementById("k").addEventListener("click", () => {
+  kb.value = SENTINEL;
+  kb.focus();
+});
+kb.addEventListener("input", () => {
+  const v = kb.value;
+  if (v.length < SENTINEL.length) send({ k: "key", name: "backspace" });
+  else if (v.length > SENTINEL.length) send({ k: "text", s: v.slice(SENTINEL.length) });
+  kb.value = SENTINEL;
+});
+kb.addEventListener("keydown", ev => {
+  if (ev.key === "Enter") { ev.preventDefault(); send({ k: "key", name: "enter" }); }
+});
+</script>
+</body>
+</html>

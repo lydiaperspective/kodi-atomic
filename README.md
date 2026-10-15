@@ -39,8 +39,6 @@ Now you can flash the iso to a usb or run in virtual machine.
 
 During the installer make sure to create the user as **kodi**, you can set whatever password you want.
 
-
-
 # Notes:
 
 If the build tool leaves a folder owned by root in the project folder (it likely will) use the following command to remove it.
@@ -53,7 +51,7 @@ sudo rm -R folderName
 
 - [x] Boot directly into Kodi.
 
-- [ ] Add flatpak for Grayjay.
+- [ ] Add ability to install flatpaks and auto add to kodi interface.
 
 - [ ] Add auto dvd ripper via podman container (using freemkv, dvdinfo and HandBrakeCLI for encoding).
 

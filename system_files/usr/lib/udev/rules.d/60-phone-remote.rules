@@ -1,0 +1,2 @@
+# Let the phone-remote service user open /dev/uinput without running as root.
+KERNEL=="uinput", SUBSYSTEM=="misc", GROUP="phone-remote", MODE="0660", OPTIONS+="static_node=uinput"

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon id="plugin.program.applauncher" name="App Launcher" version="1.0.0" provider-name="local">
+  <requires>
+    <import addon="xbmc.python" version="3.0.0"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource" library="default.py">
+    <provides>executable</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary lang="en_US">Launch installed apps</summary>
+    <description lang="en_US">Lists installed Flatpak apps and launches them.</description>
+    <platform>linux</platform>
+  </extension>
+</addon>

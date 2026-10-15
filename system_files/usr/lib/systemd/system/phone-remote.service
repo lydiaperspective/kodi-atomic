@@ -1,0 +1,31 @@
+[Unit]
+Description=Phone remote (touchpad and keyboard over uinput)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=phone-remote
+Group=phone-remote
+StateDirectory=phone-remote
+StateDirectoryMode=0700
+ExecStart=/usr/bin/python3 /usr/libexec/phone-remote/remote.py
+Restart=always
+RestartSec=2
+
+# Bind address / port. Override with a drop-in (systemctl edit phone-remote),
+# e.g. Environment=REMOTE_HOST=100.x.y.z to listen only on Tailscale.
+Environment=REMOTE_HOST=0.0.0.0
+Environment=REMOTE_PORT=8765
+
+# Hardening
+DeviceAllow=/dev/uinput rw
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -38,19 +38,19 @@ dnf5 install -y \
      cockpit-storaged \
      cockpit-networkmanager \
      cockpit-ostree \
-     ffmpeg
+     ffmpeg \
+     python3-aiohttp \
+     python3-evdev \
+     pciutils \
+     usbutils
+
 
 # Enable kodi service
 systemctl enable kodi.service bootc-fetch-apply-updates.timer
 
-# Enable flatpak-setup
-systemctl enable flatpak-setup.service
-
-# Add Flathub and Install Grayjay
-flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --system -y --noninteractive flathub app.grayjay.Grayjay
-
 # Enable Services
+systemctl enable phone-remote.service
 systemctl enable podman.socket
 systemctl enable cockpit.socket
+systemctl enable flatpak-setup.service
 
